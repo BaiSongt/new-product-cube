@@ -1,0 +1,186 @@
+{
+  "schemaVersion": 6,
+  "sceneId": "heavy-boring-milling-cell-demo",
+  "representation": "schematic",
+  "validatedAgainstRealMachine": false,
+  "renderFramework": "Three.js",
+  "coordinates": {
+    "handedness": "right",
+    "worldUp": "Y",
+    "displayUnit": "m",
+    "cadImportUnit": "mm",
+    "conversionMmToM": 0.001
+  },
+  "machine": {
+    "id": "one-floor-boring-machine",
+    "count": 1,
+    "type": "floor-type horizontal boring mill",
+    "realModel": null,
+    "axisDefinitions": [
+      "XCarriage",
+      "YHeadstock",
+      "ZRam"
+    ],
+    "optionalWAxisStatus": "not yet confirmed",
+    "demoTrajectoryTargets": "twoSideMountHoles",
+    "actualWheelBoreMachiningReachability": "not validated",
+    "spindleAxisReference": "ram-local X=0, Y=0.02, direction=+Z; world origin machine.position.z=-6.65",
+    "alignmentCalculation": "3D spindle centerline vs hole center perpendicular distance, simulated",
+    "toolTipStopGapMeters": 0.09,
+    "physicalToolAxisIsNominalOnly": true,
+    "kinematicChain": [
+      "machineRoot",
+      "XCarriage",
+      "YHeadstock",
+      "ZRam",
+      "SpindleGauge",
+      "ToolHolder",
+      "BoringBarOrProbe"
+    ],
+    "spindleRotationAroundOwnAxis": true,
+    "operationModes": [
+      "A-ROUGH",
+      "A-FINISH",
+      "B-ROUGH",
+      "B-FINISH",
+      "ANGLE-CHANGE-MANUAL",
+      "ANGLE-TOP-01"
+    ],
+    "toolAssemblyCalibratedAgainstRealMachine": false,
+    "attachmentModes": [
+      "boring",
+      "none (manual exchange)",
+      "angle-head-90deg",
+      "probe"
+    ],
+    "angleHead": {
+      "inputAxis": [
+        0,
+        0,
+        1
+      ],
+      "outputAxis": [
+        0,
+        -1,
+        0
+      ],
+      "antiRotationPositioning": "required but not validated",
+      "mountMode": "manual schematic exchange",
+      "tcpSource": "core/angle-head.js",
+      "toolLengthMeasured": false,
+      "reachCollisionEnvelopeValidated": false,
+      "topApproachGapMeters": 0.09,
+      "topTargetIsPreexistingMachinedFeature": false,
+      "realCncPostprocessorConfigured": false
+    }
+  },
+  "workpiece": {
+    "type": "parameterized Three.js mesh (not CAD)",
+    "cadId": null,
+    "source": "src/models/workpiece.js",
+    "geometryIsManufacturingCertified": false,
+    "holesArePhysicalGeometry": true,
+    "holesAreMachinedAtRuntime": false,
+    "topTurretOpening": {
+      "isOpen": true,
+      "shapeIsPerforated": true,
+      "radiusMeters": 0.858,
+      "axis": "Y",
+      "interpretation": "开口保留，未放置炮塔；角度头演示位在外缘顶部面，不进入炮塔开口"
+    },
+    "wheelHolePairs": 5,
+    "wheelAxleBores": [
+      {
+        "id": "left-bore",
+        "xMeters": 0.165,
+        "yMeters": 2.2540000000000004,
+        "zMeters": 0.5009999999999999,
+        "axisDirection": "Z"
+      },
+      {
+        "id": "right-bore",
+        "xMeters": 0.165,
+        "yMeters": 2.2540000000000004,
+        "zMeters": 5.099,
+        "axisDirection": "Z"
+      }
+    ],
+    "frontMountingHoles": [
+      {
+        "xMeters": -2.662,
+        "yMeters": 2.914,
+        "axisDirection": "Z"
+      },
+      {
+        "xMeters": 2.849,
+        "yMeters": 2.914,
+        "axisDirection": "Z"
+      }
+    ],
+    "nominalMountingCenterline": {
+      "xMeters": [
+        -2.662,
+        2.849
+      ],
+      "yMeters": 2.914,
+      "zMeters": 0.5009999999999999,
+      "axisDirection": "Z"
+    },
+    "inspectionDisplay": {
+      "pointCloud": "synthetic markers, not measurements",
+      "sectionOffsetsMeters": [
+        0.028,
+        0.072
+      ],
+      "independentInspectionRequired": true
+    },
+    "displayScale": {
+      "x": 1.1,
+      "y": 1.1,
+      "z": 1.1
+    },
+    "angleHeadTopTarget": {
+      "xMeters": 1.7600000000000002,
+      "yMeters": 3.7720000000000002,
+      "zMeters": 1.1499999999999997,
+      "axisDirection": "negativeY",
+      "isRealCutFeature": false,
+      "targetType": "existing top surface / nominal process point"
+    }
+  },
+  "safetyConstraints": {
+    "researchProductionPhysicalIsolation": true,
+    "remoteCncStart": false,
+    "motionIsPhysicalSimulation": false,
+    "measurementHasAcceptanceAuthority": false,
+    "probeContactMeasurement": false,
+    "independentFinalInspectionPerformed": false
+  },
+  "implementationStages": {
+    "M0": "completed",
+    "M1": "completed",
+    "M1.1": "superseded by parameterized geometry",
+    "M2": "parameterized scene + six-stage narrated motion",
+    "M3": "axis-aligned spindle/boring bar + DNC/MDC preview + inspection planning + simulated trace export",
+    "M4": "implemented: compact simulated JSON panel, 7-stage CAM-to-quality story, probe planning and safe retract-first motion",
+    "M5": "implemented: schematic spindle gauge and coaxial bar/probe assembly, four deterministic rough/finish passes, live geometric diagnostics and compact operation panel; real machine/CNC/metrology not validated",
+    "M6": "车体同比例放大10%，侧孔/炮塔口/工艺基准同步缩放；加入人工角度头换装 + 向下 TCP 运动 + 工序讲解、几何和安全回归；不声明实机对接能力"
+  },
+  "demo": {
+    "durationSeconds": 150,
+    "stageIds": [
+      "research",
+      "setup",
+      "alignment",
+      "dnc",
+      "machining",
+      "angleChange",
+      "angleMachining",
+      "inspection",
+      "archive"
+    ],
+    "dataPanel": "summary collapsed by default; full simulated JSON expandable",
+    "cameraSingleScene": true,
+    "operationPanel": "四道直镗工序 + 角度头换装与顶部进给状态；角度头 TCP 和工作面净距"
+  }
+}

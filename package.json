@@ -1,0 +1,19 @@
+{
+  "name": "boring-mill-digital-cell-demo",
+  "private": true,
+  "version": "0.6.0",
+  "type": "module",
+  "description": "大型落地镗铣床 Three.js M6：+10%战车车体、90°角度头人工更换、-Y 顶部加工、统一 TCP 与数据面板",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "vite build",
+    "preview": "vite preview --host 0.0.0.0",
+    "test": "node --test tests/*.test.js"
+  },
+  "dependencies": {
+    "three": "0.180.0"
+  },
+  "devDependencies": {
+    "vite": "7.1.9"
+  }
+}

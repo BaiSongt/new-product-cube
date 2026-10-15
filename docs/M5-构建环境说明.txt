@@ -1,0 +1,1 @@
+运行环境验收限制：npm registry.npmjs.org 无法解析，依赖未安装，因此 Vite/WebGL 未在当前容器验收。
