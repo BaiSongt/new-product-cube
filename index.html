@@ -22,14 +22,17 @@
         <div class="identity-text"><strong>大型落地镗铣床数字化加工单元</strong><span>INDUSTRIAL DIGITAL MACHINING CELL <i>·</i> THREE.JS DEMO</span></div>
       </div>
       <div class="header-right">
-        <span class="build-mark"><span class="mark-dot"></span> M6 · 90°角度头换装</span>
+        <span class="build-mark"><span class="mark-dot"></span> M7 · 场景布局优化</span>
         <span class="mode-mark">示意模型 · 模拟运动</span>
+        <button type="button" id="mobile-nav-toggle" class="mobile-drawer-toggle" aria-expanded="false" aria-controls="left-rail">视角</button>
+        <button type="button" id="mobile-info-toggle" class="mobile-drawer-toggle" aria-expanded="false" aria-controls="right-rail">信息</button>
         <button type="button" id="fullscreen" class="icon-button" title="全屏切换" aria-label="全屏切换">
           <svg viewBox="0 0 24 24" fill="none"><path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
       </div>
     </header>
 
+    <div class="left-rail" id="left-rail" aria-label="视角与工序导航">
     <div class="scene-info">
       <div class="eyebrow"><span class="tinybar"></span> WORKSHOP OVERVIEW / 工业现场</div>
       <h1>一台机床，一套<br><em>数字化加工闭环</em></h1>
@@ -54,7 +57,26 @@
       <small>数值均为场景几何计算；不代表机床精度或切削结果。</small>
     </section>
 
-    <div class="right-rail" aria-label="场景解释和业务数据">
+    <div class="view-panel" role="group" aria-label="预设视角">
+      <div class="panel-label">SCENE / 视角导航</div>
+      <button type="button" class="view-button active" data-view="overview"><span class="view-index">01</span><span>全景鸟瞰</span></button>
+      <button type="button" class="view-button" data-view="machine"><span class="view-index">02</span><span>机床结构</span></button>
+      <button type="button" class="view-button" data-view="workpiece"><span class="view-index">03</span><span>工件装夹</span></button>
+      <button type="button" class="view-button" data-view="bores"><span class="view-index">04</span><span>双侧轴孔</span></button>
+      <button type="button" class="view-button" data-view="office"><span class="view-index">05</span><span>机旁工作间</span></button>
+      <button type="button" class="view-button" data-view="machining"><span class="view-index">06</span><span>镗孔中心线</span></button>
+      <button type="button" class="view-button" data-view="anglehead"><span class="view-index">07</span><span>90°角度头</span></button>
+      <button type="button" class="view-button" data-view="angleClose"><span class="view-index">08</span><span>顶部加工特写</span></button>
+      <div class="view-divider"></div>
+      <button type="button" class="switch-button active" id="toggle-labels"><span>◎</span> 信息标记 <b id="labels-value">开</b></button>
+      <button type="button" class="switch-button" id="toggle-wire"><span>▧</span> 车体结构线 <b id="wire-value">关</b></button>
+      <button type="button" class="switch-button" id="toggle-envelope"><span>▤</span> 角度头包络 <b id="envelope-value">关</b></button>
+      <button type="button" class="switch-button active" id="toggle-guides"><span>⊕</span> 轴线示意 <b id="guides-value">开</b></button>
+      <button type="button" class="switch-button active" id="toggle-follow"><span>◉</span> 镜头导览 <b id="follow-value">开</b></button>
+    </div>
+    </div>
+
+    <div class="right-rail" id="right-rail" aria-label="场景解释和业务数据">
     <aside class="details" id="details" aria-live="polite">
       <div class="details-top">
         <div><div class="details-eyebrow" id="detail-kind">场景说明 / SCENE GUIDE</div><h2 id="detail-title">数字化加工单元</h2></div>
@@ -100,24 +122,6 @@
       </div>
     </section>
 
-    </div>
-
-    <div class="view-panel" role="group" aria-label="预设视角">
-      <div class="panel-label">SCENE / 视角导航</div>
-      <button type="button" class="view-button active" data-view="overview"><span class="view-index">01</span><span>全景鸟瞰</span></button>
-      <button type="button" class="view-button" data-view="machine"><span class="view-index">02</span><span>机床结构</span></button>
-      <button type="button" class="view-button" data-view="workpiece"><span class="view-index">03</span><span>工件装夹</span></button>
-      <button type="button" class="view-button" data-view="bores"><span class="view-index">04</span><span>双侧轴孔</span></button>
-      <button type="button" class="view-button" data-view="office"><span class="view-index">05</span><span>机旁工作间</span></button>
-      <button type="button" class="view-button" data-view="machining"><span class="view-index">06</span><span>镗孔中心线</span></button>
-      <button type="button" class="view-button" data-view="anglehead"><span class="view-index">07</span><span>90°角度头</span></button>
-      <button type="button" class="view-button" data-view="angleClose"><span class="view-index">08</span><span>顶部加工特写</span></button>
-      <div class="view-divider"></div>
-      <button type="button" class="switch-button active" id="toggle-labels"><span>◎</span> 信息标记 <b id="labels-value">开</b></button>
-      <button type="button" class="switch-button" id="toggle-wire"><span>▧</span> 车体结构线 <b id="wire-value">关</b></button>
-      <button type="button" class="switch-button" id="toggle-envelope"><span>▤</span> 角度头包络 <b id="envelope-value">关</b></button>
-      <button type="button" class="switch-button active" id="toggle-guides"><span>⊕</span> 轴线示意 <b id="guides-value">开</b></button>
-      <button type="button" class="switch-button active" id="toggle-follow"><span>◉</span> 镜头导览 <b id="follow-value">开</b></button>
     </div>
 
     <div class="legend"><span class="legend-item"><i class="c-machine"></i> 机床</span><span class="legend-item"><i class="c-work"></i> 工件</span><span class="legend-item"><i class="c-axis"></i> 轴孔/基准</span><span class="legend-item"><i class="c-office"></i> 工作间</span></div>

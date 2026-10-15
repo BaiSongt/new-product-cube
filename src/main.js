@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import {placeSceneLabels} from './ui/overlay-layout.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import {createWorkshop,createOffice,createCNCStation} from './models/workshop.js';
 import {createMachine} from './models/machine.js';
@@ -277,7 +278,23 @@ play.addEventListener('click',()=>setPlay(!playing));
 document.querySelector('#reset-motion').addEventListener('click',()=>{playing=false;progress=0;updatePlaybackUI();});
 slider.addEventListener('input',e=>{playing=false;progress=clamp01(Number(e.target.value)/1000);updatePlaybackUI();});
 document.querySelector('#speed').addEventListener('click',()=>{playbackRate=playbackRate===1?.5:playbackRate===.5?2:1;document.querySelector('#speed').textContent=`${playbackRate.toFixed(1)}×`;});
-document.querySelectorAll('.view-button').forEach(b=>b.addEventListener('click',()=>{cameraFollow=false;document.querySelector('#toggle-follow').classList.remove('active');document.querySelector('#follow-value').textContent='关';flyTo(b.dataset.view);}));
+// Smaller viewports show one HUD drawer at a time, leaving the 3D world visible.
+const mobileNavToggle=document.querySelector('#mobile-nav-toggle');
+const mobileInfoToggle=document.querySelector('#mobile-info-toggle');
+function closeMobileDrawers(){
+ document.body.classList.remove('nav-open','info-open');
+ mobileNavToggle.setAttribute('aria-expanded','false');
+ mobileInfoToggle.setAttribute('aria-expanded','false');
+}
+function toggleMobileDrawer(kind){
+ const className=kind==='nav'?'nav-open':'info-open';
+ const expanded=!document.body.classList.contains(className);
+ closeMobileDrawers();
+ if(expanded){document.body.classList.add(className);(kind==='nav'?mobileNavToggle:mobileInfoToggle).setAttribute('aria-expanded','true');}
+}
+mobileNavToggle.addEventListener('click',()=>toggleMobileDrawer('nav'));
+mobileInfoToggle.addEventListener('click',()=>toggleMobileDrawer('info'));
+document.querySelectorAll('.view-button').forEach(b=>b.addEventListener('click',()=>{closeMobileDrawers();cameraFollow=false;document.querySelector('#toggle-follow').classList.remove('active');document.querySelector('#follow-value').textContent='关';flyTo(b.dataset.view);}));
 document.querySelectorAll('[data-stage]').forEach(b=>b.addEventListener('click',()=>{playing=false;progress=WORKFLOW.find(s=>s.id===b.dataset.stage).time;updatePlaybackUI();flyTo(stageView[b.dataset.stage]);}));
 document.querySelector('#toggle-follow').addEventListener('click',()=>{cameraFollow=!cameraFollow;document.querySelector('#toggle-follow').classList.toggle('active',cameraFollow);document.querySelector('#follow-value').textContent=cameraFollow?'开':'关';});
 let labelsOn=true,guidesOn=true;
@@ -300,7 +317,7 @@ canvas.addEventListener('pointerup',e=>{
  startPoint=null;
 });
 window.addEventListener('keydown',e=>{
- if(e.key==='Escape'){closeDetails();if(traceOpen)showTrace(false);}
+ if(e.key==='Escape'){closeDetails();closeMobileDrawers();if(traceOpen)showTrace(false);}
  if(e.code==='Space' && !['INPUT','TEXTAREA','BUTTON'].includes(document.activeElement?.tagName)){e.preventDefault();setPlay(!playing);}
 });
 
@@ -310,18 +327,42 @@ const tagAnchors=[
  ['label-bores',()=>new THREE.Vector3(.165,2.35,5.14)],
  ['label-office',()=>new THREE.Vector3(13.85,4.5,4)]
 ];
+const overlayObstacleSelectors=[
+ '.topbar','.left-rail','.right-rail','.operation-focus','.transport','.status-strip'
+];
 function projectTags(){
  const rect=canvas.getBoundingClientRect();
+ if(!labelsOn){for(const [id] of tagAnchors)document.getElementById(id).hidden=true;return;}
+ // Every element is measured in canvas-relative CSS px. Hidden drawers cannot
+ // reserve space. The diagnostic card is outside the rail on desktops.
+ const obstacles=[];
+ for(const selector of overlayObstacleSelectors){
+  const el=document.querySelector(selector);
+  if(!el || el.hidden || getComputedStyle(el).display==='none' || getComputedStyle(el).visibility==='hidden')continue;
+  const bounds=el.getBoundingClientRect();
+  if(bounds.width<1 || bounds.height<1)continue;
+  // On a wide display, the left rail and its absolute diagnostic card are
+  // treated separately because the card extends beyond the rail rectangle.
+  obstacles.push({left:bounds.left-rect.left,right:bounds.right-rect.left,top:bounds.top-rect.top,bottom:bounds.bottom-rect.top});
+ }
+ const projected=[];
  for(const [id,getPoint] of tagAnchors){
-  const el=document.getElementById(id);el.hidden=!labelsOn;
-  if(!labelsOn)continue;
-  const position=getPoint();tmpVec.copy(position).project(camera);
-  const hidden=tmpVec.z>1 || tmpVec.z< -1 || Math.abs(tmpVec.x)>1.1 || Math.abs(tmpVec.y)>1.1;
-  el.hidden=hidden;
-  if(!hidden){el.style.left=`${(tmpVec.x*.5+.5)*rect.width}px`;el.style.top=`${(-tmpVec.y*.5+.5)*rect.height}px`;}
+  const el=document.getElementById(id);
+  tmpVec.copy(getPoint()).project(camera);
+  if(tmpVec.z<=-1 || tmpVec.z>=1 || Math.abs(tmpVec.x)>1.06 || Math.abs(tmpVec.y)>1.06){el.hidden=true;continue;}
+  // Make dimensions measurable even when the previous frame hid the label.
+  el.hidden=false;
+  projected.push({id,x:(tmpVec.x*.5+.5)*rect.width,y:(-tmpVec.y*.5+.5)*rect.height,
+    width:el.offsetWidth,height:el.offsetHeight});
+ }
+ const placements=placeSceneLabels(projected,obstacles,{width:rect.width,height:rect.height});
+ for(const placed of placements){
+  const el=document.getElementById(placed.id);
+  el.hidden=!placed.visible;
+  if(placed.visible){el.style.left=`${placed.left}px`;el.style.top=`${placed.top}px`;}
  }
 }
-function resize(){const w=window.innerWidth,h=window.innerHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();}
+function resize(){if(window.innerWidth>700)closeMobileDrawers();const w=window.innerWidth,h=window.innerHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();}
 window.addEventListener('resize',resize);resize();
 const clock=new THREE.Clock();let frames=0;
 function render(){
