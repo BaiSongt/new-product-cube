@@ -3,6 +3,13 @@
  * 不使用机床关节原点或刀具切削刃偏置替代主轴中心线。
  */
 export const HULL_SCALE=Object.freeze({x:1.10,y:1.10,z:1.10});
+/** 与渲染模型共用的顶板与炮塔孔约束（工件局部坐标，m）。 */
+export const HULL_DECK=Object.freeze({
+ xMin:.57,xMax:2.74,zMin:-1.99,zMax:1.99,
+ deckY:2.38,thickness:.09,baseOffset:-.05,
+ turretX:1.60,turretZ:0,turretRadius:.78,
+ get topY(){return this.deckY+this.baseOffset+this.thickness;},
+});
 export const GEOMETRY = Object.freeze({
   machineRootZ:-6.65,
   spindleLocalX:0,
@@ -59,8 +66,8 @@ export function perpendicularProbeAxisError(pose){
 
 /** 90°向下角度头：顶板外缘上的拟加工位置，不与炮塔开口重叠。 */
 export function angleHeadTopTargetWorld(){return Object.freeze({
- x:1.60*HULL_SCALE.x,
- y:GEOMETRY.hullCenterY+(2.38+.04)*HULL_SCALE.y, // Extrude deck top face: base y=deckY-.05, thickness=.09
+ x:HULL_DECK.turretX*HULL_SCALE.x,
+ y:GEOMETRY.hullCenterY+HULL_DECK.topY*HULL_SCALE.y,
  z:GEOMETRY.hullCenterZ-1.50*HULL_SCALE.z,
  axis:Object.freeze([0,-1,0]),
  feature:'TOP-DECK-01',

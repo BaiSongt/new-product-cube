@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import {placeSceneLabels} from './ui/overlay-layout.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import {createWorkshop,createOffice,createCNCStation} from './models/workshop.js';
 import {createMachine} from './models/machine.js';
@@ -9,7 +10,8 @@ import {holeCenterWorld,perpendicularAxisError,probeTargetWorld,perpendicularPro
 import {DEMO_PACKAGE,displayState,makeDemoTrace,compactDemoSummary} from './core/process-demo.js';
 import {OPERATIONS} from './core/operation-plan.js';
 import {buildMachineDiagnostics} from './core/machine-kinematics.js';
-import {angleHeadDiagnostics,angleTargetPose} from './core/angle-head.js';
+import {angleHeadDiagnostics,angleTargetPose,angleHeadTcpWorld} from './core/angle-head.js';
+import {inspectAngleHeadClearance} from './core/clearance.js';
 import './styles.css';
 
 const canvas=document.querySelector('#viewport');
@@ -58,7 +60,8 @@ const views={
  bores:{position:[10.5,6.9,10.7],target:[0,2.35,2.75]},
  office:{position:[20.5,7.25,-.2],target:[13.85,1.75,4.1]},
  machining:{position:[-2.2,4.4,-6.2],target:[0.2,2.8,-.08]},
- anglehead:{position:[4.5,7.5,-2.35],target:[1.3,3.9,1.0]}
+ anglehead:{position:[4.5,7.5,-2.35],target:[1.3,3.9,1.0]},
+ angleClose:{position:[4.6,6.10,-1.75],target:[1.76,3.9,1.15]}
 };
 const tmpVec=new THREE.Vector3();
 function v3(a){return new THREE.Vector3(...a)}
@@ -68,7 +71,7 @@ function flyTo(viewName){
  const cfg=views[viewName];if(!cfg)return;
  cameraMove={start:performance.now(),duration:1080,from:camera.position.clone(),to:v3(cfg.position),targetFrom:controls.target.clone(),targetTo:v3(cfg.target)};
  document.querySelectorAll('[data-view]').forEach(el=>el.classList.toggle('active',el.dataset.view===viewName));
- const description={overview:'场景整体',machine:'结构与运动',workpiece:'装夹与基准',bores:'孔轴线与加工位置',office:'程序与监控工作间',machining:'镗杆与孔位共轴',anglehead:'90°直角铣头 · 顶部加工'}[viewName];
+ const description={overview:'场景整体',machine:'结构与运动',workpiece:'装夹与基准',bores:'孔轴线与加工位置',office:'程序与监控工作间',machining:'镗杆与孔位共轴',anglehead:'90°直角铣头 · 顶部加工',angleClose:'角度头 TCP / 顶板局部特写'}[viewName];
  document.querySelector('.eyebrow').innerHTML=`<span class="tinybar"></span> SCENE VIEW / ${description}`;
 }
 controls.addEventListener('start',()=>{cameraMove=null;cameraFollow=false;document.querySelector('#toggle-follow')?.classList.remove('active');if(document.querySelector('#follow-value'))document.querySelector('#follow-value').textContent='关';});
@@ -180,7 +183,7 @@ document.querySelector('#copy-demo-trace').addEventListener('click',async()=>{
 document.querySelector('#export-demo-trace').addEventListener('click',()=>{
  refreshTracePanel(true);
  const url=URL.createObjectURL(new Blob([traceJson],{type:'application/json;charset=utf-8'}));
- const anchor=document.createElement('a');anchor.href=url;anchor.download='大型镗铣床_M6_仅模拟过程记录.json';
+ const anchor=document.createElement('a');anchor.href=url;anchor.download='大型镗铣床_M7_仅模拟过程记录.json';
  document.body.append(anchor);anchor.click();anchor.remove();setTimeout(()=>URL.revokeObjectURL(url),3000);
 });
 const operationFocus=document.querySelector('#operation-focus');
@@ -189,6 +192,9 @@ const operationState=document.querySelector('#operation-state');
 const operationGap=document.querySelector('#operation-gap');
 const operationError=document.querySelector('#operation-error');
 const operationButtons=document.querySelector('#operation-jumps');
+const clearancePreflight=document.querySelector('#clearance-preflight');
+const clearanceStatus=document.querySelector('#clearance-status');
+const clearanceDescription=document.querySelector('#clearance-description');
 for(const op of OPERATIONS){const btn=document.createElement('button');btn.type='button';btn.textContent=op.id;btn.dataset.operation=op.id;btn.title=op.name;btn.addEventListener('click',()=>{playing=false;progress=op.start+.001;updatePlaybackUI();flyTo('machining');});operationButtons.append(btn);}
 function refreshOperationFocus(pose){
  const visible=['machining','angleChange','angleMachining','inspection'].includes(pose.stage);operationFocus.hidden=!visible;
@@ -198,10 +204,20 @@ function refreshOperationFocus(pose){
  operationState.textContent=pose.operation?(pose.operation.motion==='feed'?'进给 / 非切削':'安全退刀'):pose.stage==='angleMachining'?'−Y 输出刀轴 · 顶板进给规划 / 非切削':pose.stage==='angleChange'?'停转 / 防转定位确认（均为示意）':pose.inspectionActive?'虚拟测头 / 不接触':'Z 轴回退后横移';
  operationGap.textContent=`${(diag.standoffMeters*1000).toFixed(0)} mm`;
  operationError.textContent=diag.axisErrorMeters===null?'—':`${(diag.axisErrorMeters*1000).toFixed(1)} mm`;
+ const inAngle=pose.toolMode==='angle';
+ clearancePreflight.hidden=!inAngle;
+ if(inAngle){
+  const check=inspectAngleHeadClearance(pose);
+  machine.setAngleEnvelopeStatus(check.status);
+  const label={outside:'远离顶部区域',clear:'场景净距充足',attention:'接近预警阈值',interference:'示意包络干涉'};
+  clearanceStatus.textContent=label[check.status];clearancePreflight.dataset.status=check.status;
+  const gap=check.minimumGapMeters===null?'未进入检查区域':`最小投影净距 ${(check.minimumGapMeters*1000).toFixed(0)} mm`;
+  clearanceDescription.textContent=`${gap} · 仅简化几何预检，非实机碰撞认证`;
+ }
  for(const btn of operationButtons.children)btn.classList.toggle('active',btn.dataset.operation===pose.operation?.id);
 }
 const storyNumber=document.querySelector('#story-number'),storyName=document.querySelector('#story-name'),storyDescription=document.querySelector('#story-description');
-const stageView={research:'overview',setup:'workpiece',alignment:'machining',dnc:'office',machining:'machining',angleChange:'machine',angleMachining:'anglehead',inspection:'bores',archive:'office'};
+const stageView={research:'overview',setup:'workpiece',alignment:'machining',dnc:'office',machining:'machining',angleChange:'machine',angleMachining:'angleClose',inspection:'bores',archive:'office'};
 function refreshStage(t){
  const stage=getActiveStage(t);if(stage.id===stageName)return;
  stageName=stage.id;
@@ -262,12 +278,29 @@ play.addEventListener('click',()=>setPlay(!playing));
 document.querySelector('#reset-motion').addEventListener('click',()=>{playing=false;progress=0;updatePlaybackUI();});
 slider.addEventListener('input',e=>{playing=false;progress=clamp01(Number(e.target.value)/1000);updatePlaybackUI();});
 document.querySelector('#speed').addEventListener('click',()=>{playbackRate=playbackRate===1?.5:playbackRate===.5?2:1;document.querySelector('#speed').textContent=`${playbackRate.toFixed(1)}×`;});
-document.querySelectorAll('.view-button').forEach(b=>b.addEventListener('click',()=>{cameraFollow=false;document.querySelector('#toggle-follow').classList.remove('active');document.querySelector('#follow-value').textContent='关';flyTo(b.dataset.view);}));
+// Smaller viewports show one HUD drawer at a time, leaving the 3D world visible.
+const mobileNavToggle=document.querySelector('#mobile-nav-toggle');
+const mobileInfoToggle=document.querySelector('#mobile-info-toggle');
+function closeMobileDrawers(){
+ document.body.classList.remove('nav-open','info-open');
+ mobileNavToggle.setAttribute('aria-expanded','false');
+ mobileInfoToggle.setAttribute('aria-expanded','false');
+}
+function toggleMobileDrawer(kind){
+ const className=kind==='nav'?'nav-open':'info-open';
+ const expanded=!document.body.classList.contains(className);
+ closeMobileDrawers();
+ if(expanded){document.body.classList.add(className);(kind==='nav'?mobileNavToggle:mobileInfoToggle).setAttribute('aria-expanded','true');}
+}
+mobileNavToggle.addEventListener('click',()=>toggleMobileDrawer('nav'));
+mobileInfoToggle.addEventListener('click',()=>toggleMobileDrawer('info'));
+document.querySelectorAll('.view-button').forEach(b=>b.addEventListener('click',()=>{closeMobileDrawers();cameraFollow=false;document.querySelector('#toggle-follow').classList.remove('active');document.querySelector('#follow-value').textContent='关';flyTo(b.dataset.view);}));
 document.querySelectorAll('[data-stage]').forEach(b=>b.addEventListener('click',()=>{playing=false;progress=WORKFLOW.find(s=>s.id===b.dataset.stage).time;updatePlaybackUI();flyTo(stageView[b.dataset.stage]);}));
 document.querySelector('#toggle-follow').addEventListener('click',()=>{cameraFollow=!cameraFollow;document.querySelector('#toggle-follow').classList.toggle('active',cameraFollow);document.querySelector('#follow-value').textContent=cameraFollow?'开':'关';});
 let labelsOn=true,guidesOn=true;
 document.querySelector('#toggle-labels').addEventListener('click',()=>{labelsOn=!labelsOn;document.querySelector('#toggle-labels').classList.toggle('active',labelsOn);document.querySelector('#labels-value').textContent=labelsOn?'开':'关';});
 document.querySelector('#toggle-wire').addEventListener('click',()=>{const enabled=!document.querySelector('#toggle-wire').classList.contains('active');workpiece.setWireframe(enabled);document.querySelector('#toggle-wire').classList.toggle('active',enabled);document.querySelector('#wire-value').textContent=enabled?'开':'关';});
+document.querySelector('#toggle-envelope').addEventListener('click',()=>{const control=document.querySelector('#toggle-envelope');const enabled=machine.setAngleEnvelopeVisible(!control.classList.contains('active'));control.classList.toggle('active',enabled);document.querySelector('#envelope-value').textContent=enabled?'开':'关';});
 document.querySelector('#toggle-guides').addEventListener('click',()=>{guidesOn=!guidesOn;workpiece.guides.visible=guidesOn;document.querySelector('#toggle-guides').classList.toggle('active',guidesOn);document.querySelector('#guides-value').textContent=guidesOn?'开':'关';});
 document.querySelector('#fullscreen').addEventListener('click',async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else await document.documentElement.requestFullscreen();}catch(_){/* 在受限浏览器环境下保持普通视图 */}});
 document.querySelectorAll('.scene-tag').forEach(el=>el.addEventListener('click',()=>showDetails(el.dataset.key)));
@@ -284,7 +317,7 @@ canvas.addEventListener('pointerup',e=>{
  startPoint=null;
 });
 window.addEventListener('keydown',e=>{
- if(e.key==='Escape'){closeDetails();if(traceOpen)showTrace(false);}
+ if(e.key==='Escape'){closeDetails();closeMobileDrawers();if(traceOpen)showTrace(false);}
  if(e.code==='Space' && !['INPUT','TEXTAREA','BUTTON'].includes(document.activeElement?.tagName)){e.preventDefault();setPlay(!playing);}
 });
 
@@ -294,18 +327,42 @@ const tagAnchors=[
  ['label-bores',()=>new THREE.Vector3(.165,2.35,5.14)],
  ['label-office',()=>new THREE.Vector3(13.85,4.5,4)]
 ];
+const overlayObstacleSelectors=[
+ '.topbar','.left-rail','.right-rail','.operation-focus','.transport','.status-strip'
+];
 function projectTags(){
  const rect=canvas.getBoundingClientRect();
+ if(!labelsOn){for(const [id] of tagAnchors)document.getElementById(id).hidden=true;return;}
+ // Every element is measured in canvas-relative CSS px. Hidden drawers cannot
+ // reserve space. The diagnostic card is outside the rail on desktops.
+ const obstacles=[];
+ for(const selector of overlayObstacleSelectors){
+  const el=document.querySelector(selector);
+  if(!el || el.hidden || getComputedStyle(el).display==='none' || getComputedStyle(el).visibility==='hidden')continue;
+  const bounds=el.getBoundingClientRect();
+  if(bounds.width<1 || bounds.height<1)continue;
+  // On a wide display, the left rail and its absolute diagnostic card are
+  // treated separately because the card extends beyond the rail rectangle.
+  obstacles.push({left:bounds.left-rect.left,right:bounds.right-rect.left,top:bounds.top-rect.top,bottom:bounds.bottom-rect.top});
+ }
+ const projected=[];
  for(const [id,getPoint] of tagAnchors){
-  const el=document.getElementById(id);el.hidden=!labelsOn;
-  if(!labelsOn)continue;
-  const position=getPoint();tmpVec.copy(position).project(camera);
-  const hidden=tmpVec.z>1 || tmpVec.z< -1 || Math.abs(tmpVec.x)>1.1 || Math.abs(tmpVec.y)>1.1;
-  el.hidden=hidden;
-  if(!hidden){el.style.left=`${(tmpVec.x*.5+.5)*rect.width}px`;el.style.top=`${(-tmpVec.y*.5+.5)*rect.height}px`;}
+  const el=document.getElementById(id);
+  tmpVec.copy(getPoint()).project(camera);
+  if(tmpVec.z<=-1 || tmpVec.z>=1 || Math.abs(tmpVec.x)>1.06 || Math.abs(tmpVec.y)>1.06){el.hidden=true;continue;}
+  // Make dimensions measurable even when the previous frame hid the label.
+  el.hidden=false;
+  projected.push({id,x:(tmpVec.x*.5+.5)*rect.width,y:(-tmpVec.y*.5+.5)*rect.height,
+    width:el.offsetWidth,height:el.offsetHeight});
+ }
+ const placements=placeSceneLabels(projected,obstacles,{width:rect.width,height:rect.height});
+ for(const placed of placements){
+  const el=document.getElementById(placed.id);
+  el.hidden=!placed.visible;
+  if(placed.visible){el.style.left=`${placed.left}px`;el.style.top=`${placed.top}px`;}
  }
 }
-function resize(){const w=window.innerWidth,h=window.innerHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();}
+function resize(){if(window.innerWidth>700)closeMobileDrawers();const w=window.innerWidth,h=window.innerHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();}
 window.addEventListener('resize',resize);resize();
 const clock=new THREE.Clock();let frames=0;
 function render(){
@@ -316,6 +373,13 @@ function render(){
   const k=Math.min(1,(performance.now()-cameraMove.start)/cameraMove.duration),e=1-Math.pow(1-k,3);
   camera.position.copy(cameraMove.from).lerp(cameraMove.to,e);controls.target.copy(cameraMove.targetFrom).lerp(cameraMove.targetTo,e);
   if(k>=1)cameraMove=null;
+ }
+ // 只在自动导览下以实际输出 TCP 跟随，用户操作 OrbitControls 则立即停止。
+ if(playing && cameraFollow && !cameraMove && progress>=.824 && progress<.87){
+  const tcp=angleHeadTcpWorld(getDemoPose(progress));
+  const at=new THREE.Vector3(tcp.x,tcp.y+.04,tcp.z);
+  const desired=at.clone().add(new THREE.Vector3(2.8,2.4,-3.0));
+  controls.target.lerp(at,.065);camera.position.lerp(desired,.065);
  }
  controls.update();machine.root.updateMatrixWorld(true);
  if(selectedHelper && frames%2===0)selectedHelper.update();

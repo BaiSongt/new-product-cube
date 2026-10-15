@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import {palette,metal,solid,glow,meshBox,meshCylinder,tagPick,line} from '../core/materials.js';
-import {GEOMETRY,HULL_SCALE,angleHeadTopTargetWorld} from '../core/geometry.js';
+import {GEOMETRY,HULL_SCALE,HULL_DECK,angleHeadTopTargetWorld} from '../core/geometry.js';
 
 // 单位：m；三维外形仅用于建设方案演示，不构成工程尺寸或加工指令。
 export const HULL_CONFIG = Object.freeze({
@@ -8,7 +8,7 @@ export const HULL_CONFIG = Object.freeze({
   wheelAxleXs:Object.freeze(GEOMETRY.wheelAxleXs.map(x=>x/HULL_SCALE.x)),wheelAxleY:GEOMETRY.wheelAxleLocalY,wheelHoleRadius:GEOMETRY.wheelHoleRadius/HULL_SCALE.y,
   mountingXs:Object.freeze(GEOMETRY.mountingXs.map(x=>x/HULL_SCALE.x)),
   mountingY:GEOMETRY.mountingY,mountingRadius:.18,
-  turret:{x:1.60,z:0,radius:.78,deckY:2.38},
+  turret:{x:HULL_DECK.turretX,z:HULL_DECK.turretZ,radius:HULL_DECK.turretRadius,deckY:HULL_DECK.deckY},
 });
 
 function createOutline(){
@@ -29,8 +29,8 @@ function createOutline(){
 function createDeck(){
  // XZ 上的顶板；中心开口为真实轮廓孔，不能用不透明材质盖住。
  const {x,z,radius}=HULL_CONFIG.turret;
- const s=new THREE.Shape();s.moveTo(.57,-1.99);s.lineTo(2.74,-1.99);
- s.lineTo(2.74,1.99);s.lineTo(.57,1.99);s.closePath();
+ const s=new THREE.Shape();s.moveTo(HULL_DECK.xMin,HULL_DECK.zMin);s.lineTo(HULL_DECK.xMax,HULL_DECK.zMin);
+ s.lineTo(HULL_DECK.xMax,HULL_DECK.zMax);s.lineTo(HULL_DECK.xMin,HULL_DECK.zMax);s.closePath();
  const cut=new THREE.Path();cut.absarc(x,z,radius,0,Math.PI*2,false);s.holes.push(cut);
  return s;
 }
@@ -82,8 +82,8 @@ export function createWorkpiece(){
  ];
  for(const pts of frontPanels)addHullMesh(hull,edges,plate(pts,topMetal));
  // 真正的顶部开口：带圆孔的挤出顶板，而非圆环贴在封闭箱体上。
- const deck=new THREE.Mesh(new THREE.ExtrudeGeometry(createDeck(),{depth:.09,bevelEnabled:false,curveSegments:64}),topMetal);
- deck.rotation.x=-Math.PI/2;deck.position.y=HULL_CONFIG.turret.deckY-.05;deck.name='炮塔安装区顶板（中央真开口）';addHullMesh(hull,edges,deck);
+ const deck=new THREE.Mesh(new THREE.ExtrudeGeometry(createDeck(),{depth:HULL_DECK.thickness,bevelEnabled:false,curveSegments:64}),topMetal);
+ deck.rotation.x=-Math.PI/2;deck.position.y=HULL_DECK.deckY+HULL_DECK.baseOffset;deck.name='炮塔安装区顶板（中央真开口）';addHullMesh(hull,edges,deck);
  // 顶部圆口的垂直内圈；开口中央完全无遮挡。
  const tc=HULL_CONFIG.turret;
  const innerRim=new THREE.Mesh(new THREE.CylinderGeometry(tc.radius-.012,tc.radius-.012,.34,72,1,true),inside);
