@@ -42,10 +42,14 @@
     </div>
 
     <section class="operation-focus" id="operation-focus" hidden aria-live="polite" aria-label="当前工序和主轴几何诊断">
-      <div class="operation-kicker">M6 / TOOL & MACHINE OPERATION <span>SIMULATED</span></div>
+      <div class="operation-kicker">M7 / TOOL & MACHINE OPERATION <span>SIMULATED</span></div>
       <strong id="operation-name">当前工序</strong>
       <span id="operation-state" class="operation-state">等待工序</span>
       <div class="operation-metrics"><div>刀具安全净距<b id="operation-gap">—</b></div><div>主轴与目标孔轴线偏差<b id="operation-error">—</b></div></div>
+      <div id="clearance-preflight" class="clearance-preflight" hidden>
+        <div class="clearance-preflight-heading"><span>角度头包络预检</span><strong id="clearance-status">—</strong></div>
+        <small id="clearance-description">未进行示意几何检查</small>
+      </div>
       <div id="operation-jumps" class="operation-jumps" aria-label="粗精镗工序跳转"></div>
       <small>数值均为场景几何计算；不代表机床精度或切削结果。</small>
     </section>
@@ -107,9 +111,11 @@
       <button type="button" class="view-button" data-view="office"><span class="view-index">05</span><span>机旁工作间</span></button>
       <button type="button" class="view-button" data-view="machining"><span class="view-index">06</span><span>镗孔中心线</span></button>
       <button type="button" class="view-button" data-view="anglehead"><span class="view-index">07</span><span>90°角度头</span></button>
+      <button type="button" class="view-button" data-view="angleClose"><span class="view-index">08</span><span>顶部加工特写</span></button>
       <div class="view-divider"></div>
       <button type="button" class="switch-button active" id="toggle-labels"><span>◎</span> 信息标记 <b id="labels-value">开</b></button>
       <button type="button" class="switch-button" id="toggle-wire"><span>▧</span> 车体结构线 <b id="wire-value">关</b></button>
+      <button type="button" class="switch-button" id="toggle-envelope"><span>▤</span> 角度头包络 <b id="envelope-value">关</b></button>
       <button type="button" class="switch-button active" id="toggle-guides"><span>⊕</span> 轴线示意 <b id="guides-value">开</b></button>
       <button type="button" class="switch-button active" id="toggle-follow"><span>◉</span> 镜头导览 <b id="follow-value">开</b></button>
     </div>
@@ -126,7 +132,7 @@
     <div class="status-strip"><span class="status-circle" id="status-dot"></span><span>机床示意状态</span><strong id="machine-status">待机 · 等待作业</strong><span class="status-sep"></span><span>目标孔共轴偏差</span><strong id="axis-error" aria-live="polite">—</strong><span class="status-sep"></span><span>当前阶段</span><strong id="machine-phase">初始位置</strong></div>
 
     <footer class="transport">
-      <div class="transport-header"><span class="activity-title"><span class="activity-glyph">▶</span> 工艺闭环 M6 演示</span><span class="activity-subtitle">仅作流程讲解 · 非 NC / 材料去除仿真</span></div>
+      <div class="transport-header"><span class="activity-title"><span class="activity-glyph">▶</span> 工艺闭环 M7 演示</span><span class="activity-subtitle">仅作流程讲解 · 非 NC / 材料去除仿真</span></div>
       <div class="transport-controls">
         <button class="play-button" id="play-pause" type="button" aria-label="播放或暂停运动"><span id="play-glyph">▶</span></button>
         <button class="reset-button" type="button" id="reset-motion" title="运动复位" aria-label="运动复位">↺</button>
@@ -145,7 +151,7 @@
         <button class="speed-button" id="speed" title="切换播放速度" type="button">1.0×</button>
       </div>
     </footer>
-    <div class="review-watermark">M6 · 直镗杆 → 安全换装 90°角度头 → 顶部加工 → 测头规划（均为模拟）</div>
+    <div class="review-watermark">M7 · 直镗杆 → 安全换装 90°角度头 → 顶部加工 → 测头规划（均为模拟）</div>
     <div class="bottom-note">提示：拖动旋转 · 滚轮缩放 · 右键平移 · 点击设备查看详情 · ESC 关闭详情</div>
     <div id="error-box" class="error-box" hidden></div>
   </div>

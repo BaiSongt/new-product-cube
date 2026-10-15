@@ -96,3 +96,14 @@
 /* 视角控制和左上叙事始终可见，工序卡偏右避让它们。 */
 .operation-focus{left:385px;bottom:194px;width:276px}
 @media(max-width:1150px){.operation-focus{left:335px;bottom:196px;width:258px}}
+
+/* M7：紧凑角度头预检：只反映有限几何包络，不代表实机验证。 */
+.clearance-preflight{border:1px solid #bfdde0;background:#ebf7f7;padding:8px 9px;border-radius:8px;display:flex;flex-direction:column;gap:5px}
+.clearance-preflight[hidden]{display:none}
+.clearance-preflight-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:9px;color:#527985}
+.clearance-preflight-heading strong{font-size:10px;color:#167c8d}
+.clearance-preflight small{color:#607d86;line-height:1.5;font-size:9px}
+.clearance-preflight[data-status="attention"]{background:#fff6e3;border-color:#e9d29f}
+.clearance-preflight[data-status="attention"] strong{color:#9a721f}
+.clearance-preflight[data-status="interference"]{background:#fff0eb;border-color:#edb9ab}
+.clearance-preflight[data-status="interference"] strong{color:#ad4f3b}
