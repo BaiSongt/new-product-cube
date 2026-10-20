@@ -85,6 +85,20 @@ export function createMachine() {
  // 不以附件壳体中心替代输出刀具 TCP，最低端位于独立输出轴线上。
  const angleGuide=new THREE.Group();angleGuide.name='90°输出刀轴中心线';angleHead.add(angleGuide);
  angleGuide.add(line([[0,-.40,ANGLE_HEAD.gearCenterLocalZ],[0,-1.48,ANGLE_HEAD.gearCenterLocalZ]],0xffbe5a,.92));
+ // M7：可开关的简化角度头壳体 AABB 与刀具圆柱包络；非工程碰撞实体。
+ const angleEnvelope=new THREE.Group();angleEnvelope.name='M7 角度头空间预检包络（近似）';angleHead.add(angleEnvelope);
+ const envelopeMaterial=new THREE.LineBasicMaterial({color:0x18a9b2,transparent:true,opacity:.94,depthTest:true});
+ const housingEdges=new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(1.04,.72,.94)),envelopeMaterial);
+ housingEdges.position.set(0,-.16,4.67);angleEnvelope.add(housingEdges);
+ const cutterEnvelope=new THREE.Mesh(new THREE.CylinderGeometry(.19,.19,.84,28,1,true),
+  new THREE.MeshBasicMaterial({color:0x18a9b2,transparent:true,opacity:.19,depthWrite:false,side:THREE.DoubleSide}));
+ cutterEnvelope.position.set(0,-.82,ANGLE_HEAD.gearCenterLocalZ);angleEnvelope.add(cutterEnvelope);
+ let envelopeEnabled=false;angleEnvelope.visible=false;
+ function setAngleEnvelopeVisible(on){envelopeEnabled=Boolean(on);angleEnvelope.visible=envelopeEnabled;return envelopeEnabled;}
+ function setAngleEnvelopeStatus(status){
+  const tone=status==='interference'?0xc25143:status==='attention'?0xd29b34:0x18a9b2;
+  envelopeMaterial.color.setHex(tone);cutterEnvelope.material.color.setHex(tone);
+ }
  angleHead.visible=false;tagPick(angleHead,'tool');
  // 主轴中心线辅助线，与可见镗杆严格共轴；只在工艺讲解时展示。
  const spindleGuide=new THREE.Group();spindleGuide.name='主轴中心线示意';ram.add(spindleGuide);
@@ -114,5 +128,5 @@ export function createMachine() {
   return point.distanceTo(new THREE.Vector3(ref.x,ref.y,ref.z));
  }
  function setAxisGuideVisible(visible){spindleGuide.visible=Boolean(visible);}
- return {root,carriage,column,head,ram,tool,probe,angleHead,applyPose,getTipWorldPosition,getSpindleWorldAxis,getGaugeWorldPosition,getProbeCenterWorldPosition,compareKinematicReference,compareAngleHeadTcp,getAngleHeadTipWorldPosition,setAxisGuideVisible,frames};
+ return {root,carriage,column,head,ram,tool,probe,angleHead,applyPose,getTipWorldPosition,getSpindleWorldAxis,getGaugeWorldPosition,getProbeCenterWorldPosition,compareKinematicReference,compareAngleHeadTcp,getAngleHeadTipWorldPosition,setAxisGuideVisible,setAngleEnvelopeVisible,setAngleEnvelopeStatus,frames};
 }

@@ -2,9 +2,10 @@ import {clamp01,getActiveStage} from './trajectory.js';
 import {holeCenterWorld,perpendicularAxisError,tipToNearWallGap,probeTargetWorld,perpendicularProbeAxisError,GEOMETRY} from './geometry.js';
 import {buildMachineDiagnostics,worldSpindleReference} from './machine-kinematics.js';
 import {angleHeadDiagnostics} from './angle-head.js';
+import {inspectAngleHeadClearance} from './clearance.js';
 /** 数据全部从确定性动画状态派生；不连接设备、不伪造哈希、测量值或通过状态。 */
 export const DEMO_PACKAGE=Object.freeze({
- id:'DEMO-HULL-001',revision:'演示 V6',machine:'单台落地镗铣床（型号待核验）',
+ id:'DEMO-HULL-001',revision:'演示 V7',machine:'单台落地镗铣床（型号待核验）',
  approval:'审核流程模拟 / 未签发正式 NC',verification:'未执行真实 SHA-256',
  transfer:'受控介质人工交接（逻辑说明）',interface:'不读取 CNC（真实接口未连接）',
 });
@@ -42,6 +43,7 @@ export function makeDemoTrace(progress,pose){
    spindleDirection:[...GEOMETRY.spindleAxisLocal],perpendicularErrorMeters:perpendicularAxisError(pose,hole),
    toolTipToNearSidewallMeters:tipToNearWallGap(pose),isActualMachineMeasurement:false},
   rightAngleHead:pose.toolMode==='angle'?{...angleHeadDiagnostics(pose),inputAxis:[0,0,1],outputAxis:[0,-1,0],antiRotationVerified:false,actualTcpCalibrated:false,actualMachineCollisionCertified:false}:null,
+  sceneClearancePreflight:pose.toolMode==='angle'?inspectAngleHeadClearance(pose):null,
   virtualInspection:status.stage==='inspection'?{probeTargetMeters:probeTargetWorld(),
    nominalAxisErrorMeters:perpendicularProbeAxisError(pose),contactTriggered:false,measuredPoints:0}:null,
   quality:{measured:false,nominalAxisOnly:true,plannedSectionsPerSide:2,
